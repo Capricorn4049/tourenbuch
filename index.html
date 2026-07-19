@@ -160,6 +160,9 @@
   .card .links img.favicon{
     width:14px; height:14px; border-radius:3px; flex:none;
   }
+  .card .links .emoji-icon{
+    font-size:0.85rem; line-height:1; flex:none;
+  }
   .card .links .pano-badge{
     font-family:'JetBrains Mono',monospace;
     font-size:0.62rem; font-weight:500;
@@ -194,7 +197,7 @@
     </g>
   </svg>
   <h1>Unterwegs in den Bergen</h1>
-  <p>Touren, Panoramen und Kugelpanoramen</p>
+  <p>Touren, Panoramen und Kugelpanoramen &mdash; sortiert nach Jahr.</p>
 </div>
 
 <nav class="year-nav" id="yearNav"></nav>
@@ -211,7 +214,7 @@
    Datei > Freigeben > Im Web veröffentlichen > CSV
 */
 const CONFIG = {
-  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRY4yQeMGGI-45uj-9pyUN_E-Gf1YMmExpMhBx5k4gf-zLMp6cAf2wIMHlAZToUsoekmkMFj87O0xyg/pub?gid=515593912&single=true&output=csv"
+  sheetCsvUrl: "PASTE_YOUR_PUBLISHED_GOOGLE_SHEET_CSV_URL_HERE"
 };
 /* ============================================================ */
 
@@ -250,6 +253,8 @@ const CATEGORY_FAVICON_DOMAIN = { drive:'drive.google.com', wiki:'wikipedia.org'
 
 function linkIcon(kind){
   if(kind === 'pano') return `<span class="pano-badge">360°</span>`;
+  if(kind === 'sv') return `<span class="emoji-icon">🌐</span>`;
+  if(kind === 'drive') return `<img class="favicon" src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" alt="">`;
   const domain = CATEGORY_FAVICON_DOMAIN[kind];
   return `<img class="favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${domain}" alt="">`;
 }
@@ -269,10 +274,14 @@ function buildCard(row){
   const wiki = parseLinkField(row.wikipedia_link);
   const sv = parseLinkField(row.streetview_links);
   const pano = parseLinkField(row.panorama_link);
+  const thumbImg = `<img class="thumb" src="${img}" loading="lazy" alt="${row.title}"
+           onerror="this.src='${PLACEHOLDER_SVG}'">`;
+  const thumbHtml = drive.length
+    ? `<a href="${drive[0].url}" target="_blank" rel="noopener">${thumbImg}</a>`
+    : thumbImg;
   return `
     <div class="card">
-      <img class="thumb" src="${img}" loading="lazy" alt="${row.title}"
-           onerror="this.src='${PLACEHOLDER_SVG}'">
+      ${thumbHtml}
       <div class="body">
         <h3>${row.title}</h3>
         <div class="date">${formatDateEU(row.date)}</div>
