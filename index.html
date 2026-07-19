@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Touren</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{
+    --bg:#10151a;
+    --surface:#1a2229;
+    --surface-hover:#212b33;
+    --text:#eef2f0;
+    --muted:#8ea3ab;
+    --accent:#ff8a4c;
+    --accent-2:#4fb6c9;
+    --line:#2a343b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+
+  /* ---- Hero ---- */
+  .hero{
+    position:relative;
+    padding:5.5rem 1.5rem 4rem;
+    text-align:center;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      repeating-linear-gradient(180deg, transparent 0 38px, rgba(79,182,201,0.05) 38px 39px),
+      repeating-linear-gradient(0deg, transparent 0 38px, rgba(79,182,201,0.05) 38px 39px);
+    mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .hero svg.contour{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-52%);
+    width:min(1100px,140%); opacity:0.35; pointer-events:none;
+  }
+  .hero h1{
+    position:relative;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(2.4rem,6vw,4rem);
+    letter-spacing:-0.02em;
+    margin:0 0 0.6rem;
+  }
+  .hero p{
+    position:relative;
+    color:var(--muted);
+    font-size:1.05rem;
+    max-width:36rem;
+    margin:0 auto;
+  }
+
+  /* ---- Year nav ---- */
+  .year-nav{
+    position:sticky; top:0; z-index:10;
+    display:flex; gap:0.5rem; flex-wrap:wrap;
+    padding:1rem 1.5rem;
+    background:rgba(16,21,26,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    justify-content:center;
+  }
+  .year-nav a{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.8rem;
+    color:var(--muted);
+    text-decoration:none;
+    padding:0.35rem 0.7rem;
+    border-radius:999px;
+    border:1px solid var(--line);
+    transition:all .15s ease;
+  }
+  .year-nav a:hover{ color:var(--text); border-color:var(--accent-2); }
+
+  main{ max-width:1180px; margin:0 auto; padding:2rem 1.5rem 6rem; }
+
+  .year-section{ margin-top:3.5rem; }
+  .year-heading{
+    display:flex; align-items:center; gap:1rem;
+    margin-bottom:1.5rem;
+  }
+  .year-heading h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.8rem; font-weight:600;
+    margin:0; white-space:nowrap;
+  }
+  .year-heading .rule{
+    flex:1; height:1px;
+    background:repeating-linear-gradient(90deg, var(--line) 0 6px, transparent 6px 10px);
+  }
+  .year-heading .count{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.8rem; color:var(--muted);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:1.25rem;
+  }
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    transition:transform .15s ease, border-color .15s ease;
+  }
+  .card:hover{ transform:translateY(-3px); border-color:var(--accent-2); }
+
+  .card .thumb{
+    width:100%; aspect-ratio:4/3; object-fit:cover;
+    background:var(--surface-hover);
+    display:block;
+  }
+  .card .body{ padding:1rem 1.1rem 1.2rem; }
+  .card h3{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:1.15rem; font-weight:600;
+    margin:0 0 0.3rem;
+  }
+  .card .date{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.75rem; color:var(--accent);
+    margin:0 0 0.6rem;
+  }
+  .card .teaser{
+    color:var(--muted); font-size:0.88rem; line-height:1.4;
+    margin:0 0 0.8rem;
+  }
+  .card .links{ display:flex; flex-direction:column; gap:0.3rem; }
+  .card .links .group{ display:flex; flex-wrap:wrap; gap:0.4rem; }
+  .card .links a{
+    font-size:0.78rem;
+    text-decoration:none;
+    color:var(--text);
+    background:var(--surface-hover);
+    border:1px solid var(--line);
+    padding:0.25rem 0.55rem;
+    border-radius:6px;
+    display:inline-flex; align-items:center; gap:0.35rem;
+  }
+  .card .links a:hover{ border-color:var(--accent-2); color:var(--accent-2); }
+
+  .empty, .loading{
+    text-align:center; color:var(--muted);
+    padding:4rem 1rem; font-family:'JetBrains Mono',monospace; font-size:0.85rem;
+  }
+
+  footer{
+    text-align:center; color:var(--muted);
+    font-size:0.78rem; padding:2rem; border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <svg class="contour" viewBox="0 0 800 260" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" stroke="#4fb6c9" stroke-width="1">
+      <path d="M0,220 Q120,140 220,190 T400,150 T560,190 T800,120" opacity="0.5"/>
+      <path d="M0,235 Q120,160 220,205 T400,170 T560,205 T800,140" opacity="0.4"/>
+      <path d="M0,250 Q120,185 220,222 T400,192 T560,222 T800,162" opacity="0.3"/>
+      <path d="M40,200 Q150,110 260,165 T430,120 T590,160 T780,90" opacity="0.25" stroke="#ff8a4c"/>
+    </g>
+  </svg>
+  <h1>Unterwegs in den Bergen</h1>
+  <p>Touren, Panoramen und Kugelpanoramen &mdash; sortiert nach Jahr.</p>
+</div>
+
+<nav class="year-nav" id="yearNav"></nav>
+
+<main id="main">
+  <div class="loading">Lade Touren&hellip;</div>
+</main>
+
+<footer>Gebaut mit einer Google-Tabelle als Datenquelle.</footer>
+
+<script>
+/* ====================== KONFIGURATION ======================
+   Hier die "Veröffentlichen" CSV-URL deiner Google-Tabelle eintragen:
+   Datei > Freigeben > Im Web veröffentlichen > CSV
+*/
+const CONFIG = {
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRY4yQeMGGI-45uj-9pyUN_E-Gf1YMmExpMhBx5k4gf-zLMp6cAf2wIMHlAZToUsoekmkMFj87O0xyg/pub?gid=515593912&single=true&output=csv"
+};
+/* ============================================================ */
+
+const PLACEHOLDER_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <rect width="400" height="300" fill="#1a2229"/>
+  <path d="M0,220 L90,110 L150,180 L230,80 L320,190 L400,140 L400,300 L0,300 Z" fill="#212b33"/>
+  <path d="M0,240 L120,150 L200,210 L280,130 L400,200 L400,300 L0,300 Z" fill="#2a343b"/>
+</svg>`)}`;
+
+function driveThumb(url){
+  if(!url) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w800`;
+  return url; // assume it's already a direct image URL
+}
+
+function parseLinkField(raw){
+  if(!raw) return [];
+  return raw.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(line=>{
+    const idx = line.indexOf('|');
+    if(idx === -1) return { label: line, url: line };
+    return { label: line.slice(0,idx).trim(), url: line.slice(idx+1).trim() };
+  });
+}
+
+function linkIcon(kind){
+  return { drive:'📁', wiki:'📖', sv:'🌐' }[kind] || '🔗';
+}
+
+function renderLinkGroup(kind, entries){
+  if(!entries.length) return '';
+  return `<div class="group">${entries.map(e=>
+    `<a href="${e.url}" target="_blank" rel="noopener">${linkIcon(kind)} ${e.label}</a>`
+  ).join('')}</div>`;
+}
+
+function buildCard(row){
+  const img = driveThumb(row.preview_image) || PLACEHOLDER_SVG;
+  const drive = parseLinkField(row.drive_link);
+  const wiki = parseLinkField(row.wikipedia_link);
+  const sv = parseLinkField(row.streetview_links);
+  return `
+    <div class="card">
+      <img class="thumb" src="${img}" loading="lazy" alt="${row.title}"
+           onerror="this.src='${PLACEHOLDER_SVG}'">
+      <div class="body">
+        <h3>${row.title}</h3>
+        <div class="date">${row.date}</div>
+        ${row.teaser ? `<p class="teaser">${row.teaser}</p>` : ''}
+        <div class="links">
+          ${renderLinkGroup('drive', drive)}
+          ${renderLinkGroup('wiki', wiki)}
+          ${renderLinkGroup('sv', sv)}
+        </div>
+      </div>
+    </div>`;
+}
+
+function render(rows){
+  const main = document.getElementById('main');
+  const nav = document.getElementById('yearNav');
+
+  const clean = rows.filter(r => r.date && r.title);
+  clean.sort((a,b) => b.date.localeCompare(a.date));
+
+  const byYear = {};
+  clean.forEach(r => {
+    const y = r.date.slice(0,4);
+    (byYear[y] = byYear[y] || []).push(r);
+  });
+
+  const years = Object.keys(byYear).sort((a,b)=>b-a);
+
+  if(!years.length){
+    main.innerHTML = '<div class="empty">Keine Touren gefunden. Prüfe die Google-Sheet-URL in CONFIG.sheetCsvUrl.</div>';
+    return;
+  }
+
+  nav.innerHTML = years.map(y => `<a href="#y${y}">${y}</a>`).join('');
+
+  main.innerHTML = years.map(y => `
+    <section class="year-section" id="y${y}">
+      <div class="year-heading">
+        <h2>${y}</h2>
+        <div class="rule"></div>
+        <div class="count">${byYear[y].length} Tour${byYear[y].length===1?'':'en'}</div>
+      </div>
+      <div class="grid">
+        ${byYear[y].map(buildCard).join('')}
+      </div>
+    </section>
+  `).join('');
+}
+
+if(CONFIG.sheetCsvUrl.startsWith('http')){
+  Papa.parse(CONFIG.sheetCsvUrl, {
+    download:true, header:true, skipEmptyLines:true,
+    complete: (res) => render(res.data),
+    error: () => {
+      document.getElementById('main').innerHTML =
+        '<div class="empty">Fehler beim Laden der Google-Tabelle. URL in CONFIG prüfen.</div>';
+    }
+  });
+} else {
+  document.getElementById('main').innerHTML =
+    '<div class="empty">Bitte in CONFIG.sheetCsvUrl die veröffentlichte CSV-URL deiner Google-Tabelle eintragen.</div>';
+}
+</script>
+</body>
+</html>
