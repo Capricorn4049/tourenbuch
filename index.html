@@ -142,6 +142,20 @@
   }
   .card .teaser{
     color:var(--muted); font-size:0.88rem; line-height:1.4;
+    margin:0 0 0.6rem;
+  }
+  .card .meta{
+    display:flex; flex-wrap:wrap; gap:0.35rem 0.6rem;
+    font-size:0.78rem; color:var(--muted);
+    margin:0 0 0.6rem;
+  }
+  .card .meta .tag{
+    display:inline-flex; align-items:center; gap:0.3rem;
+  }
+  .card .besonderes{
+    font-size:0.78rem; color:var(--accent);
+    border-left:2px solid var(--accent);
+    padding-left:0.5rem;
     margin:0 0 0.8rem;
   }
   .card .links{ display:flex; flex-direction:column; gap:0.3rem; }
@@ -197,7 +211,7 @@
     </g>
   </svg>
   <h1>Unterwegs in den Bergen</h1>
-  <p>Touren, Panoramen und Kugelpanoramen.</p>
+  <p>Touren, Panoramen und Kugelpanoramen</p>
 </div>
 
 <nav class="year-nav" id="yearNav"></nav>
@@ -279,13 +293,22 @@ function buildCard(row){
   const thumbHtml = drive.length
     ? `<a href="${drive[0].url}" target="_blank" rel="noopener">${thumbImg}</a>`
     : thumbImg;
+
+  const metaParts = [];
+  if(row.art) metaParts.push(`<span class="tag">${row.art}</span>`);
+  if(row.teilnehmer) metaParts.push(`<span class="tag">mit ${row.teilnehmer}</span>`);
+  const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join('')}</div>` : '';
+  const besonderesHtml = row.besonderes ? `<p class="besonderes">${row.besonderes}</p>` : '';
+
   return `
     <div class="card">
       ${thumbHtml}
       <div class="body">
         <h3>${row.title}</h3>
         <div class="date">${formatDateEU(row.date)}</div>
+        ${metaHtml}
         ${row.teaser ? `<p class="teaser">${row.teaser}</p>` : ''}
+        ${besonderesHtml}
         <div class="links">
           ${renderLinkGroup('drive', drive)}
           ${renderLinkGroup('wiki', wiki)}
