@@ -64,6 +64,25 @@
     max-width:36rem;
     margin:0 auto;
   }
+  .hero .upload-cta{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    gap:0.5rem;
+    margin-top:1.5rem;
+    padding:0.6rem 1.2rem;
+    background:var(--accent);
+    color:var(--bg);
+    font-weight:600;
+    font-size:0.9rem;
+    text-decoration:none;
+    border-radius:999px;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .hero .upload-cta:hover{
+    transform:translateY(-1px);
+    box-shadow:0 4px 14px rgba(255,138,76,0.35);
+  }
 
   /* ---- Year nav ---- */
   .year-nav{
@@ -135,22 +154,25 @@
     font-size:1.15rem; font-weight:600;
     margin:0 0 0.3rem;
   }
+  .card .teaser{
+    color:var(--text); font-size:0.95rem; font-weight:500; line-height:1.4;
+    margin:0 0 0.5rem;
+  }
   .card .date{
     font-family:'JetBrains Mono',monospace;
     font-size:0.75rem; color:var(--accent);
     margin:0 0 0.6rem;
   }
-  .card .teaser{
-    color:var(--muted); font-size:0.88rem; line-height:1.4;
-    margin:0 0 0.6rem;
-  }
   .card .meta{
-    display:flex; flex-wrap:wrap; gap:0.35rem 0.6rem;
+    display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem;
     font-size:0.78rem; color:var(--muted);
     margin:0 0 0.6rem;
   }
   .card .meta .tag{
-    display:inline-flex; align-items:center; gap:0.3rem;
+    display:inline-flex; align-items:center;
+  }
+  .card .meta .sep{
+    color:var(--line);
   }
   .card .besonderes{
     font-size:0.78rem; color:var(--accent);
@@ -211,7 +233,8 @@
     </g>
   </svg>
   <h1>Unterwegs in den Bergen</h1>
-  <p>Touren, Panoramen und Kugelpanoramen</p>
+  <p>Touren, Panoramen und Kugelpanoramen &mdash; sortiert nach Jahr.</p>
+  <a href="https://www.dropbox.com/request/rfa9r46xu9648ne0dnai" target="_blank" rel="noopener" class="upload-cta">📷 Warst du dabei? Lade deine Fotos hoch</a>
 </div>
 
 <nav class="year-nav" id="yearNav"></nav>
@@ -244,6 +267,15 @@ function formatDateEU(iso){
   if(!m) return iso;
   const [, y, mo, d] = m;
   return `${d}.${mo}.${y}`;
+}
+
+function formatDateRange(row){
+  const start = formatDateEU(row.date);
+  if(row.end_date && row.end_date.trim()){
+    const end = formatDateEU(row.end_date.trim());
+    if(end && end !== start) return `${start} - ${end}`;
+  }
+  return start;
 }
 
 function driveThumb(url){
@@ -297,7 +329,7 @@ function buildCard(row){
   const metaParts = [];
   if(row.art) metaParts.push(`<span class="tag">${row.art}</span>`);
   if(row.teilnehmer) metaParts.push(`<span class="tag">mit ${row.teilnehmer}</span>`);
-  const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join('')}</div>` : '';
+  const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join('<span class="sep">·</span>')}</div>` : '';
   const besonderesHtml = row.besonderes ? `<p class="besonderes">${row.besonderes}</p>` : '';
 
   return `
@@ -305,9 +337,9 @@ function buildCard(row){
       ${thumbHtml}
       <div class="body">
         <h3>${row.title}</h3>
-        <div class="date">${formatDateEU(row.date)}</div>
-        ${metaHtml}
         ${row.teaser ? `<p class="teaser">${row.teaser}</p>` : ''}
+        <div class="date">${formatDateRange(row)}</div>
+        ${metaHtml}
         ${besonderesHtml}
         <div class="links">
           ${renderLinkGroup('drive', drive)}
