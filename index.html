@@ -164,7 +164,7 @@
     margin:0 0 0.6rem;
   }
   .card .meta{
-    display:flex; flex-wrap:wrap; align-items:center; gap:0.4rem;
+    display:flex; flex-wrap:wrap; align-items:center; gap:0.15rem;
     font-size:0.78rem; color:var(--muted);
     margin:0 0 0.6rem;
   }
@@ -329,7 +329,7 @@ function buildCard(row){
   const metaParts = [];
   if(row.art) metaParts.push(`<span class="tag">${row.art}</span>`);
   if(row.teilnehmer) metaParts.push(`<span class="tag">mit ${row.teilnehmer}</span>`);
-  const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join('<span class="sep">·</span>')}</div>` : '';
+  const metaHtml = metaParts.length ? `<div class="meta">${metaParts.join('<span class="sep"> · </span>')}</div>` : '';
   const besonderesHtml = row.besonderes ? `<p class="besonderes">${row.besonderes}</p>` : '';
 
   return `
