@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panorama</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.7/build/pannellum.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.7/build/pannellum.js"></script>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#10151a; }
+  #panorama { width:100%; height:100%; }
+  #msg {
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#8ea3ab; font-family:sans-serif; font-size:0.95rem; text-align:center; padding:2rem;
+  }
+</style>
+</head>
+<body>
+<div id="msg">Lade Panorama&hellip;</div>
+<div id="panorama"></div>
+
+<script>
+/*
+  Aufruf:
+  panorama.html?img=<Bild-URL>              -> vaov wird automatisch berechnet (Bildhöhe/Bildbreite * 360)
+  panorama.html?img=<Bild-URL>&vaov=90      -> vaov manuell erzwingen (überschreibt die Automatik)
+  panorama.html?img=<Bild-URL>&haov=270     -> falls es mal kein volles 360°-Rundum ist (Default: 360)
+  panorama.html?img=<Bild-URL>&voffset=10   -> falls der Horizont nicht in der Bildmitte liegt (Default: 0)
+*/
+
+const params = new URLSearchParams(location.search);
+const imgUrl = params.get('img');
+const msg = document.getElementById('msg');
+
+if (!imgUrl) {
+  msg.innerHTML = 'Kein Bild angegeben.<br>Aufruf: panorama.html?img=BILD_URL';
+} else {
+  const probe = new Image();
+  probe.crossOrigin = 'anonymous';
+  probe.onload = function () {
+    const w = probe.naturalWidth;
+    const h = probe.naturalHeight;
+    const haov = parseFloat(params.get('haov')) || 360;
+    const vaov = parseFloat(params.get('vaov')) || (h / w * haov);
+    const vOffset = parseFloat(params.get('voffset')) || 0;
+
+    msg.style.display = 'none';
+    pannellum.viewer('panorama', {
+      type: 'equirectangular',
+      panorama: imgUrl,
+      haov: haov,
+      vaov: vaov,
+      vOffset: vOffset,
+      autoLoad: true,
+      compass: false,
+      showZoomCtrl: true
+    });
+  };
+  probe.onerror = function () {
+    msg.innerText = 'Bild konnte nicht geladen werden. URL prüfen (muss öffentlich erreichbar sein, CORS-fähig für die Grössenmessung).';
+  };
+  probe.src = imgUrl;
+}
+</script>
+</body>
+</html>
