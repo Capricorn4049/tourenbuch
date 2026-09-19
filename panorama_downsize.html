@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panorama</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.7/build/pannellum.css"/>
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.7/build/pannellum.js"></script>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#10151a; }
+  #panorama { width:100%; height:100%; }
+  #msg {
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#8ea3ab; font-family:sans-serif; font-size:0.95rem; text-align:center; padding:2rem;
+    white-space:pre-line;
+  }
+</style>
+</head>
+<body>
+<div id="msg">Lade Panorama&hellip;</div>
+<div id="panorama"></div>
+
+<script>
+/*
+  Aufruf-Varianten:
+
+  1) Für Bilder auf Wikimedia Commons (empfohlen, funktioniert für alle 256):
+     panorama.html?commons=Falknisspitz_Panorama.jpg
+     -> holt sich automatisch eine 3840px-Vorschau + die echten Bildmasse über die
+        Wikimedia-API, berechnet vaov daraus. Kein manuelles Ausrechnen nötig.
+
+  2) Für eine beliebige andere, direkt erreichbare Bild-URL (muss CORS erlauben):
+     panorama.html?img=<Bild-URL>
+     -> vaov wird aus den geladenen Bildmassen berechnet (Bildhöhe/Bildbreite*360)
+
+  Optionale Zusatzparameter (bei beiden Varianten):
+     &vaov=90      -> vaov manuell erzwingen (überschreibt die Automatik)
+     &haov=270     -> falls kein volles 360°-Rundum (Default: 360)
+     &voffset=10   -> falls der Horizont nicht in der Bildmitte liegt (Default: 0)
+*/
+
+const params = new URLSearchParams(location.search);
+const commonsFile = params.get('commons');
+const imgParam = params.get('img');
+const msg = document.getElementById('msg');
+
+const haovOverride = parseFloat(params.get('haov'));
+const vaovOverride = parseFloat(params.get('vaov'));
+const vOffset = parseFloat(params.get('voffset')) || 0;
+
+function showPanorama(url, width, height) {
+  const haov = haovOverride || 360;
+  const vaov = vaovOverride || (height / width * haov);
+  msg.style.display = 'none';
+  pannellum.viewer('panorama', {
+    type: 'equirectangular',
+    panorama: url,
+    haov: haov,
+    vaov: vaov,
+    vOffset: vOffset,
+    autoLoad: true,
+    compass: false,
+    showZoomCtrl: true
+  });
+}
+
+function fail(text) {
+  msg.innerText = text;
+}
+
+if (commonsFile) {
+  const apiUrl = 'https://commons.wikimedia.org/w/api.php?action=query&titles=' +
+    encodeURIComponent('File:' + commonsFile) +
+    '&prop=imageinfo&iiprop=url|size&iiurlwidth=3840&format=json&origin=*';
+
+  fetch(apiUrl)
+    .then(r => r.json())
+    .then(data => {
+      const pages = data.query && data.query.pages;
+      const page = pages && Object.values(pages)[0];
+      const info = page && page.imageinfo && page.imageinfo[0];
+      if (!info) {
+        fail('Datei "' + commonsFile + '" wurde auf Wikimedia Commons nicht gefunden.');
+        return;
+      }
+      const thumbUrl = info.thumburl || info.url;
+      showPanorama(thumbUrl, info.width, info.height);
+    })
+    .catch(() => fail('Wikimedia-API konnte nicht erreicht werden.'));
+} else if (imgParam) {
+  const probe = new Image();
+  probe.onload = function () {
+    showPanorama(imgParam, probe.naturalWidth, probe.naturalHeight);
+  };
+  probe.onerror = function () {
+    fail('Bild konnte nicht geladen werden. URL prüfen (muss öffentlich erreichbar und CORS-fähig sein).');
+  };
+  probe.src = imgParam;
+} else {
+  fail('Kein Bild angegeben.\nAufruf: panorama.html?commons=DATEINAME.jpg\noder: panorama.html?img=BILD_URL');
+}
+</script>
+</body>
+</html>
