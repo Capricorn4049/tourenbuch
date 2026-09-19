@@ -74,7 +74,7 @@ function applyTransform() {
 
 function initialView() {
   const ww = wrap.clientWidth, wh = wrap.clientHeight;
-  scale = (wh * 0.667) / naturalH;
+  scale = (wh * 0.75) / naturalH;
   minScale = Math.min(scale * 0.3, ww / naturalW);
   maxScale = Math.max(8, scale * 20);
   originX = (ww - naturalW * scale) / 2;
