@@ -14,11 +14,19 @@
     color:#8ea3ab; font-family:sans-serif; font-size:0.95rem; text-align:center; padding:2rem;
     white-space:pre-line;
   }
+  #fullres {
+    position:fixed; bottom:1rem; right:1rem; z-index:10;
+    font-family:sans-serif; font-size:0.78rem; text-decoration:none;
+    color:#8ea3ab; background:rgba(26,34,41,0.85); border:1px dashed #2a343b;
+    padding:0.4rem 0.7rem; border-radius:6px;
+  }
+  #fullres:hover { color:#eef2f0; border-color:#4fb6c9; }
 </style>
 </head>
 <body>
 <div id="msg">Lade Panorama&hellip;</div>
 <div id="panorama"></div>
+<a id="fullres" href="#" target="_blank" rel="noopener" style="display:none">🔍 Volle Auflösung</a>
 
 <script>
 /*
@@ -71,6 +79,12 @@ function showPanorama(url, width, height) {
 
 function fail(text) {
   msg.innerText = text;
+}
+
+if (commonsFile || imgParam) {
+  const fullresLink = document.getElementById('fullres');
+  fullresLink.href = 'panorama_flat.html' + location.search;
+  fullresLink.style.display = 'inline-block';
 }
 
 if (commonsFile) {
