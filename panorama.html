@@ -12,6 +12,7 @@
   #msg {
     position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
     color:#8ea3ab; font-family:sans-serif; font-size:0.95rem; text-align:center; padding:2rem;
+    white-space:pre-line;
   }
 </style>
 </head>
@@ -21,44 +22,87 @@
 
 <script>
 /*
-  Aufruf:
-  panorama.html?img=<Bild-URL>              -> vaov wird automatisch berechnet (Bildhöhe/Bildbreite * 360)
-  panorama.html?img=<Bild-URL>&vaov=90      -> vaov manuell erzwingen (überschreibt die Automatik)
-  panorama.html?img=<Bild-URL>&haov=270     -> falls es mal kein volles 360°-Rundum ist (Default: 360)
-  panorama.html?img=<Bild-URL>&voffset=10   -> falls der Horizont nicht in der Bildmitte liegt (Default: 0)
+  Aufruf-Varianten:
+
+  1) Für Bilder auf Wikimedia Commons (empfohlen, funktioniert für alle 256):
+     panorama.html?commons=Falknisspitz_Panorama.jpg
+     -> holt sich automatisch eine 3840px-Vorschau + die echten Bildmasse über die
+        Wikimedia-API, berechnet vaov daraus. Kein manuelles Ausrechnen nötig.
+
+  2) Für eine beliebige andere, direkt erreichbare Bild-URL (muss CORS erlauben):
+     panorama.html?img=<Bild-URL>
+     -> vaov wird aus den geladenen Bildmassen berechnet (Bildhöhe/Bildbreite*360)
+
+  Optionale Zusatzparameter (bei beiden Varianten):
+     &vaov=90      -> vaov manuell erzwingen (überschreibt die Automatik)
+     &haov=270     -> falls kein volles 360°-Rundum (Default: 360)
+     &voffset=10   -> falls der Horizont nicht in der Bildmitte liegt (Default: 0)
 */
 
 const params = new URLSearchParams(location.search);
-const imgUrl = params.get('img');
+const commonsFile = params.get('commons');
+const imgParam = params.get('img');
 const msg = document.getElementById('msg');
 
-if (!imgUrl) {
-  msg.innerHTML = 'Kein Bild angegeben.<br>Aufruf: panorama.html?img=BILD_URL';
-} else {
+const haovOverride = parseFloat(params.get('haov'));
+const vaovOverride = parseFloat(params.get('vaov'));
+const vOffset = parseFloat(params.get('voffset')) || 0;
+
+function showPanorama(url, width, height) {
+  const haov = haovOverride || 360;
+  const vaov = vaovOverride || (height / width * haov);
+  const initialHfov = Math.min(100, vaov * 2.2);
+  const maxHfov = Math.min(haov, Math.max(initialHfov, vaov * 3));
+  msg.style.display = 'none';
+  pannellum.viewer('panorama', {
+    type: 'equirectangular',
+    panorama: url,
+    haov: haov,
+    vaov: vaov,
+    vOffset: vOffset,
+    hfov: initialHfov,
+    minHfov: 30,
+    maxHfov: maxHfov,
+    autoLoad: true,
+    compass: false,
+    showZoomCtrl: true
+  });
+}
+
+function fail(text) {
+  msg.innerText = text;
+}
+
+if (commonsFile) {
+  const apiUrl = 'https://commons.wikimedia.org/w/api.php?action=query&titles=' +
+    encodeURIComponent('File:' + commonsFile) +
+    '&prop=imageinfo&iiprop=url|size&iiurlwidth=3840&format=json&origin=*';
+
+  fetch(apiUrl)
+    .then(r => r.json())
+    .then(data => {
+      const pages = data.query && data.query.pages;
+      const page = pages && Object.values(pages)[0];
+      const info = page && page.imageinfo && page.imageinfo[0];
+      if (!info) {
+        fail('Datei "' + commonsFile + '" wurde auf Wikimedia Commons nicht gefunden.');
+        return;
+      }
+      const thumbUrl = info.thumburl || info.url;
+      showPanorama(thumbUrl, info.width, info.height);
+    })
+    .catch(() => fail('Wikimedia-API konnte nicht erreicht werden.'));
+} else if (imgParam) {
   const probe = new Image();
   probe.onload = function () {
-    const w = probe.naturalWidth;
-    const h = probe.naturalHeight;
-    const haov = parseFloat(params.get('haov')) || 360;
-    const vaov = parseFloat(params.get('vaov')) || (h / w * haov);
-    const vOffset = parseFloat(params.get('voffset')) || 0;
-
-    msg.style.display = 'none';
-    pannellum.viewer('panorama', {
-      type: 'equirectangular',
-      panorama: imgUrl,
-      haov: haov,
-      vaov: vaov,
-      vOffset: vOffset,
-      autoLoad: true,
-      compass: false,
-      showZoomCtrl: true
-    });
+    showPanorama(imgParam, probe.naturalWidth, probe.naturalHeight);
   };
   probe.onerror = function () {
-    msg.innerText = 'Bild konnte nicht geladen werden. URL prüfen (muss öffentlich erreichbar sein, CORS-fähig für die Grössenmessung).';
+    fail('Bild konnte nicht geladen werden. URL prüfen (muss öffentlich erreichbar und CORS-fähig sein).');
   };
-  probe.src = imgUrl;
+  probe.src = imgParam;
+} else {
+  fail('Kein Bild angegeben.\nAufruf: panorama.html?commons=DATEINAME.jpg\noder: panorama.html?img=BILD_URL');
 }
 </script>
 </body>
