@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Touren</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏔️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -344,9 +345,9 @@ function buildCard(row){
       <div class="body">
         <h3>${row.title}</h3>
         ${row.teaser ? `<p class="teaser">${row.teaser}</p>` : ''}
-        ${row.route ? `<p class="route">🥾 ${row.route.split(/\s*-\s*/).join(' → ')}</p>` : ''}
         <div class="date">${formatDateRange(row)}</div>
         ${metaHtml}
+        ${row.route ? `<p class="route">🥾 ${row.route.split(/\s*-\s*/).join(' → ')}</p>` : ''}
         ${besonderesHtml}
         <div class="links">
           ${renderLinkGroup('drive', drive)}
