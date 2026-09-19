@@ -51,6 +51,8 @@ const vOffset = parseFloat(params.get('voffset')) || 0;
 function showPanorama(url, width, height) {
   const haov = haovOverride || 360;
   const vaov = vaovOverride || (height / width * haov);
+  const initialHfov = Math.min(100, vaov * 2.2);
+  const maxHfov = Math.min(haov, Math.max(initialHfov, vaov * 3));
   msg.style.display = 'none';
   pannellum.viewer('panorama', {
     type: 'equirectangular',
@@ -58,6 +60,9 @@ function showPanorama(url, width, height) {
     haov: haov,
     vaov: vaov,
     vOffset: vOffset,
+    hfov: initialHfov,
+    minHfov: 30,
+    maxHfov: maxHfov,
     autoLoad: true,
     compass: false,
     showZoomCtrl: true
