@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panorama (volle Auflösung)</title>
+<style>
+  html, body { margin:0; padding:0; height:100%; background:#10151a; overflow:hidden; }
+  #wrap {
+    width:100%; height:100%; position:relative; cursor:grab;
+    touch-action:none;
+  }
+  #wrap.grabbing { cursor:grabbing; }
+  #img {
+    position:absolute; top:0; left:0;
+    transform-origin:0 0;
+    user-select:none; -webkit-user-drag:none;
+  }
+  #msg {
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#8ea3ab; font-family:sans-serif; font-size:0.95rem; text-align:center; padding:2rem;
+    white-space:pre-line; pointer-events:none;
+  }
+  #controls {
+    position:fixed; bottom:1rem; right:1rem; display:flex; gap:0.5rem; z-index:10;
+  }
+  #controls button {
+    width:2.2rem; height:2.2rem; border-radius:6px; border:1px solid #2a343b;
+    background:#1a2229; color:#eef2f0; font-size:1.1rem; cursor:pointer;
+  }
+  #controls button:hover { border-color:#4fb6c9; }
+  #hint {
+    position:fixed; top:1rem; left:50%; transform:translateX(-50%);
+    background:rgba(16,21,26,0.85); color:#8ea3ab; font-family:sans-serif; font-size:0.78rem;
+    padding:0.4rem 0.8rem; border-radius:6px; pointer-events:none; z-index:10;
+  }
+</style>
+</head>
+<body>
+<div id="msg">Lade Panorama in voller Auflösung&hellip;<br>(kann bei grossen Dateien etwas dauern)</div>
+<div id="hint" style="display:none">Ziehen zum Verschieben &middot; Scrollen/Pinch zum Zoomen</div>
+<div id="wrap">
+  <img id="img" draggable="false">
+</div>
+<div id="controls" style="display:none">
+  <button id="zoomOut">&minus;</button>
+  <button id="zoomFit">&#9633;</button>
+  <button id="zoomIn">+</button>
+</div>
+
+<script>
+/*
+  Aufruf:
+  panorama_flat.html?commons=Falknisspitz_Panorama.jpg   -> volle Original-Auflösung von Commons
+  panorama_flat.html?img=<Bild-URL>                       -> beliebige andere direkt erreichbare Bild-URL
+*/
+
+const params = new URLSearchParams(location.search);
+const commonsFile = params.get('commons');
+const imgParam = params.get('img');
+const msg = document.getElementById('msg');
+const hint = document.getElementById('hint');
+const controls = document.getElementById('controls');
+const wrap = document.getElementById('wrap');
+const img = document.getElementById('img');
+
+let scale = 1, minScale = 0.05, maxScale = 8;
+let originX = 0, originY = 0;
+let naturalW = 0, naturalH = 0;
+
+function applyTransform() {
+  img.style.transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
+}
+
+function fitToScreen() {
+  const ww = wrap.clientWidth, wh = wrap.clientHeight;
+  const scaleX = ww / naturalW, scaleY = wh / naturalH;
+  scale = Math.min(scaleX, scaleY);
+  minScale = scale * 0.5;
+  maxScale = Math.max(8, scale * 20);
+  originX = (ww - naturalW * scale) / 2;
+  originY = (wh - naturalH * scale) / 2;
+  applyTransform();
+}
+
+function loadImage(url) {
+  img.onload = function () {
+    naturalW = img.naturalWidth;
+    naturalH = img.naturalHeight;
+    img.style.width = naturalW + 'px';
+    img.style.height = naturalH + 'px';
+    msg.style.display = 'none';
+    hint.style.display = 'block';
+    controls.style.display = 'flex';
+    fitToScreen();
+  };
+  img.onerror = function () {
+    msg.innerText = 'Bild konnte nicht geladen werden.\nURL prüfen (muss öffentlich erreichbar sein).';
+  };
+  img.src = url;
+}
+
+if (commonsFile) {
+  const apiUrl = 'https://commons.wikimedia.org/w/api.php?action=query&titles=' +
+    encodeURIComponent('File:' + commonsFile) +
+    '&prop=imageinfo&iiprop=url&format=json&origin=*';
+  fetch(apiUrl)
+    .then(r => r.json())
+    .then(data => {
+      const pages = data.query && data.query.pages;
+      const page = pages && Object.values(pages)[0];
+      const info = page && page.imageinfo && page.imageinfo[0];
+      if (!info) {
+        msg.innerText = 'Datei "' + commonsFile + '" wurde auf Wikimedia Commons nicht gefunden.';
+        return;
+      }
+      loadImage(info.url);
+    })
+    .catch(() => { msg.innerText = 'Wikimedia-API konnte nicht erreicht werden.'; });
+} else if (imgParam) {
+  loadImage(imgParam);
+} else {
+  msg.innerText = 'Kein Bild angegeben.\nAufruf: panorama_flat.html?commons=DATEINAME.jpg\noder: panorama_flat.html?img=BILD_URL';
+}
+
+// --- Pan ---
+let dragging = false, lastX = 0, lastY = 0;
+wrap.addEventListener('pointerdown', e => {
+  dragging = true;
+  wrap.classList.add('grabbing');
+  lastX = e.clientX; lastY = e.clientY;
+  wrap.setPointerCapture(e.pointerId);
+});
+wrap.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  originX += e.clientX - lastX;
+  originY += e.clientY - lastY;
+  lastX = e.clientX; lastY = e.clientY;
+  applyTransform();
+});
+wrap.addEventListener('pointerup', e => { dragging = false; wrap.classList.remove('grabbing'); });
+wrap.addEventListener('pointercancel', () => { dragging = false; wrap.classList.remove('grabbing'); });
+
+// --- Zoom (wheel / pinch) ---
+function zoomAt(factor, cx, cy) {
+  const newScale = Math.min(maxScale, Math.max(minScale, scale * factor));
+  const ratio = newScale / scale;
+  originX = cx - (cx - originX) * ratio;
+  originY = cy - (cy - originY) * ratio;
+  scale = newScale;
+  applyTransform();
+}
+
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = wrap.getBoundingClientRect();
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+  zoomAt(factor, cx, cy);
+}, { passive:false });
+
+// Basic pinch-to-zoom for touch
+let pinchDist = null;
+wrap.addEventListener('touchmove', e => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const [t1, t2] = e.touches;
+    const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    if (pinchDist) {
+      const rect = wrap.getBoundingClientRect();
+      const cx = (t1.clientX + t2.clientX) / 2 - rect.left;
+      const cy = (t1.clientY + t2.clientY) / 2 - rect.top;
+      zoomAt(dist / pinchDist, cx, cy);
+    }
+    pinchDist = dist;
+  }
+}, { passive:false });
+wrap.addEventListener('touchend', () => { pinchDist = null; });
+
+document.getElementById('zoomIn').onclick = () => zoomAt(1.3, wrap.clientWidth/2, wrap.clientHeight/2);
+document.getElementById('zoomOut').onclick = () => zoomAt(1/1.3, wrap.clientWidth/2, wrap.clientHeight/2);
+document.getElementById('zoomFit').onclick = fitToScreen;
+window.addEventListener('resize', () => { if (naturalW) fitToScreen(); });
+</script>
+</body>
+</html>
