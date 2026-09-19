@@ -156,7 +156,13 @@
   }
   .card .teaser{
     color:var(--text); font-size:0.95rem; font-weight:500; line-height:1.4;
-    margin:0 0 0.5rem;
+    margin:0 0 0.4rem;
+  }
+  .card .route{
+    font-family:'JetBrains Mono',monospace;
+    font-size:0.72rem; color:var(--muted);
+    line-height:1.4;
+    margin:0 0 0.6rem;
   }
   .card .date{
     font-family:'JetBrains Mono',monospace;
@@ -251,7 +257,7 @@
    Datei > Freigeben > Im Web veröffentlichen > CSV
 */
 const CONFIG = {
-  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRY4yQeMGGI-45uj-9pyUN_E-Gf1YMmExpMhBx5k4gf-zLMp6cAf2wIMHlAZToUsoekmkMFj87O0xyg/pub?gid=515593912&single=true&output=csv"
+  sheetCsvUrl: "PASTE_YOUR_PUBLISHED_GOOGLE_SHEET_CSV_URL_HERE"
 };
 /* ============================================================ */
 
@@ -338,6 +344,7 @@ function buildCard(row){
       <div class="body">
         <h3>${row.title}</h3>
         ${row.teaser ? `<p class="teaser">${row.teaser}</p>` : ''}
+        ${row.route ? `<p class="route">🥾 ${row.route.split(/\s*-\s*/).join(' → ')}</p>` : ''}
         <div class="date">${formatDateRange(row)}</div>
         ${metaHtml}
         ${besonderesHtml}
