@@ -36,7 +36,6 @@ if (!imgUrl) {
   msg.innerHTML = 'Kein Bild angegeben.<br>Aufruf: panorama.html?img=BILD_URL';
 } else {
   const probe = new Image();
-  probe.crossOrigin = 'anonymous';
   probe.onload = function () {
     const w = probe.naturalWidth;
     const h = probe.naturalHeight;
