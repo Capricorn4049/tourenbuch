@@ -87,6 +87,8 @@ if (commonsFile || imgParam) {
   fullresLink.style.display = 'inline-block';
 }
 
+const SAFE_MAX_WIDTH = 32768; // matches the WebGL texture limit reported by the user's device
+
 if (commonsFile) {
   const apiUrl = 'https://commons.wikimedia.org/w/api.php?action=query&titles=' +
     encodeURIComponent('File:' + commonsFile) +
@@ -102,8 +104,9 @@ if (commonsFile) {
         fail('Datei "' + commonsFile + '" wurde auf Wikimedia Commons nicht gefunden.');
         return;
       }
-      const thumbUrl = info.thumburl || info.url;
-      showPanorama(thumbUrl, info.width, info.height);
+      const useOriginal = info.width <= SAFE_MAX_WIDTH;
+      const displayUrl = useOriginal ? info.url : (info.thumburl || info.url);
+      showPanorama(displayUrl, info.width, info.height);
     })
     .catch(() => fail('Wikimedia-API konnte nicht erreicht werden.'));
 } else if (imgParam) {
