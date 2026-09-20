@@ -334,14 +334,19 @@ function fullResLink(url){
   return url.replace('panorama.html', 'panorama_flat.html');
 }
 
+function resolvePanoUrl(value){
+  return 'panorama.html?commons=' + encodeURIComponent(value.trim());
+}
+
 function renderLinkGroup(kind, entries){
   if(!entries.length) return '';
   const base = CATEGORY_LABEL[kind] || 'Link';
   return `<div class="group">${entries.map((e,i)=>{
     const label = e.label || (entries.length > 1 ? `${base} ${i+1}` : base);
-    const mainLink = `<a href="${e.url}" target="_blank" rel="noopener">${linkIcon(kind)} ${label}</a>`;
-    if(kind === 'pano' && e.url.indexOf('panorama.html') > -1){
-      const fullUrl = fullResLink(e.url);
+    const url = kind === 'pano' ? resolvePanoUrl(e.url) : e.url;
+    const mainLink = `<a href="${url}" target="_blank" rel="noopener">${linkIcon(kind)} ${label}</a>`;
+    if(kind === 'pano' && url.indexOf('panorama.html') > -1){
+      const fullUrl = fullResLink(url);
       return mainLink + `<a href="${fullUrl}" target="_blank" rel="noopener" class="fullres-link">🔍 Volle Auflösung</a>`;
     }
     return mainLink;
