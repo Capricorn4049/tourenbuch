@@ -216,16 +216,6 @@
     line-height:1.3;
     flex:none;
   }
-  .card .links .fullres-link{
-    font-size:0.7rem;
-    color:var(--muted);
-    background:transparent;
-    border:1px dashed var(--line);
-    opacity:0.8;
-  }
-  .card .links .fullres-link:hover{
-    opacity:1;
-  }
 
   .empty, .loading{
     text-align:center; color:var(--muted);
@@ -330,12 +320,10 @@ function linkIcon(kind){
   return `<img class="favicon" src="https://www.google.com/s2/favicons?sz=32&domain=${domain}" alt="">`;
 }
 
-function fullResLink(url){
-  return url.replace('panorama.html', 'panorama_flat.html');
-}
-
-function resolvePanoUrl(value){
-  return 'panorama.html?commons=' + encodeURIComponent(value.trim());
+function resolvePanoUrl(value, label){
+  let url = 'panorama.html?commons=' + encodeURIComponent(value.trim());
+  if (label) url += '&title=' + encodeURIComponent(label);
+  return url;
 }
 
 function renderLinkGroup(kind, entries){
@@ -343,13 +331,8 @@ function renderLinkGroup(kind, entries){
   const base = CATEGORY_LABEL[kind] || 'Link';
   return `<div class="group">${entries.map((e,i)=>{
     const label = e.label || (entries.length > 1 ? `${base} ${i+1}` : base);
-    const url = kind === 'pano' ? resolvePanoUrl(e.url) : e.url;
-    const mainLink = `<a href="${url}" target="_blank" rel="noopener">${linkIcon(kind)} ${label}</a>`;
-    if(kind === 'pano' && url.indexOf('panorama.html') > -1){
-      const fullUrl = fullResLink(url);
-      return mainLink + `<a href="${fullUrl}" target="_blank" rel="noopener" class="fullres-link">🔍 Volle Auflösung</a>`;
-    }
-    return mainLink;
+    const url = kind === 'pano' ? resolvePanoUrl(e.url, label) : e.url;
+    return `<a href="${url}" target="_blank" rel="noopener">${linkIcon(kind)} ${label}</a>`;
   }).join('')}</div>`;
 }
 
